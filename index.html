@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LM PROXY — High-Performance AI Routing & Backpressure</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title"       content="LM PROXY — High-Performance AI Routing & Backpressure" />
+  <meta property="og:description" content="A dynamic, self-optimizing local LLM proxy with task-based routing, PII/NDA anonymization, and automatic cloud backpressure protection." />
+  <meta property="og:image"       content="assets/cover.svg" />
+  <meta property="og:type"        content="article" />
+  <meta name="twitter:card"       content="summary_large_image" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" />
+
+  <!-- Aworan Editorial Design System -->
+  <link rel="stylesheet" href="https://alessandro-marocchini.github.io/designsystem/editorial.css" />
+
+  <!-- Applica tema e lingua salvati prima del paint -->
+  <script>
+    (function () {
+      const t = localStorage.getItem('ed-theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+      const l = localStorage.getItem('ed-lang') || 'en';
+      document.documentElement.setAttribute('data-lang', l);
+    })();
+  </script>
+
+  <style>
+    /* ═══════════════════════════════════════
+       LANGUAGE SWITCHER
+     ═══════════════════════════════════════ */
+    html[data-lang="en"] [lang="it"] {
+      display: none !important;
+    }
+    html[data-lang="it"] [lang="en"] {
+      display: none !important;
+    }
+
+    .ed-lang-switcher {
+      display: flex;
+      gap: .3rem;
+      align-items: center;
+      border: 1px solid var(--border);
+      padding: .15rem;
+      border-radius: 6px;
+      background: var(--surface-2);
+    }
+    .ed-lang-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      font-weight: 500;
+      padding: .25em .55rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      transition: all var(--duration) var(--ease);
+    }
+    .ed-lang-btn:hover {
+      color: var(--text);
+    }
+    html[data-lang="en"] .ed-lang-btn[data-lang-opt="en"],
+    html[data-lang="it"] .ed-lang-btn[data-lang-opt="it"] {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════
+       HERO TESTUALE (no immagine di sfondo)
+     ═══════════════════════════════════════ */
+    .art-hero {
+      padding: 9rem 0 5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .art-hero__eyebrow {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      color: var(--accent);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin-bottom: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .art-hero__eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px; height: 2px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+    .art-hero__title {
+      font-family: var(--font-serif);
+      font-size: clamp(3.2rem, 8vw, 7rem);
+      line-height: .9;
+      letter-spacing: -.02em;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 2rem;
+    }
+    .art-hero__title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .art-hero__sub {
+      font-family: var(--font-sans);
+      font-size: 1.18rem;
+      color: var(--text-muted);
+      max-width: 680px;
+      line-height: 1.75;
+      font-weight: 300;
+      margin-bottom: 3rem;
+    }
+    .art-hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem 3rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--border-faint);
+    }
+    .art-hero__meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+    }
+    .art-hero__meta-label {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-dim);
+    }
+    .art-hero__meta-value {
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      color: var(--text-muted);
+    }
+    .art-hero__meta-value.author { color: var(--text); font-weight: 500; }
+    .art-hero__meta-value.date   { color: var(--text-dim); }
+
+    /* ═══════════════════════════════════════
+       CODE SYNTAX COLORS
+     ═══════════════════════════════════════ */
+    .cm  { color: var(--text-dim); font-style: italic; }
+    .ck  { color: var(--accent); font-weight: 500; }
+    .cv  { color: var(--text-muted); }
+    .cv-high { color: #5a9200; }
+    .cv-mid  { color: #1a7fa0; }
+    .cv-low  { color: #c05a20; }
+    [data-theme="dark"] .cv-high { color: #c8f060; }
+    [data-theme="dark"] .cv-mid  { color: #60c8f0; }
+    [data-theme="dark"] .cv-low  { color: #f09060; }
+
+    .code-label {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-dim);
+      margin: 1.5rem 0 .4rem;
+    }
+
+    /* inline code */
+    code {
+      font-family: var(--font-mono);
+      font-size: .83em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: .12em .38em;
+      border-radius: 3px;
+    }
+    pre code { background: none; padding: 0; border-radius: 0; font-size: inherit; color: inherit; }
+
+    /* ═══════════════════════════════════════
+       SEZIONI ARTICOLO
+     ═══════════════════════════════════════ */
+    .art-section {
+      padding: 5rem 0 3rem;
+      border-top: 1px solid var(--border-faint);
+    }
+    .art-h3 {
+      font-family: var(--font-mono);
+      font-size: .76rem;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: .06em;
+      margin: 2.5rem 0 .9rem;
+      text-transform: uppercase;
+    }
+
+    /* ═══════════════════════════════════════
+       COMPARE BOXES
+     ═══════════════════════════════════════ */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    @media (max-width: 640px) { .compare { grid-template-columns: 1fr; } }
+    .compare-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .compare-box.highlight {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .compare-title {
+      font-family: var(--font-mono);
+      font-size: .66rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .compare-box.highlight .compare-title { color: var(--accent); }
+    .compare-item {
+      font-family: var(--font-sans);
+      font-size: .88rem;
+      color: var(--text-muted);
+      padding: .35rem 0;
+      border-bottom: 1px solid var(--border-faint);
+      display: flex;
+      align-items: baseline;
+      gap: .6rem;
+      font-weight: 300;
+    }
+    .compare-item:last-child { border-bottom: none; }
+    .compare-item::before {
+      content: '—';
+      color: var(--text-dim);
+      font-size: .7rem;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+    }
+    .compare-box.highlight .compare-item::before { content: '✓'; color: var(--accent); }
+
+    /* ═══════════════════════════════════════
+       TIER BADGES
+     ═══════════════════════════════════════ */
+    .tier {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      padding: .18em .55em;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .tier-high { background: var(--accent-soft); color: var(--accent); }
+    .tier-mid  { background: rgba(26,127,160,.1); color: #1a7fa0; }
+    [data-theme="dark"] .tier-mid { color: #60c8f0; background: rgba(96,200,240,.12); }
+
+    /* ═══════════════════════════════════════
+       TIER TABLE
+     ═══════════════════════════════════════ */
+    .tier-grid {
+      display: grid;
+      gap: 1px;
+      background: var(--border-faint);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+    .tier-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 100px 1fr;
+      background: var(--surface);
+      padding: .9rem 1.25rem;
+      align-items: start;
+      transition: background var(--duration);
+    }
+    .tier-row:not(.header):hover { background: var(--surface-2); }
+    .tier-row.header {
+      background: var(--surface-2);
+      padding: .6rem 1.25rem;
+    }
+    .tier-row.header span {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-dim);
+    }
+    .tier-cell {
+      font-family: var(--font-sans);
+      font-size: .88rem;
+      color: var(--text-muted);
+      padding-right: 1rem;
+      line-height: 1.5;
+      font-weight: 300;
+    }
+    .tier-cell:nth-child(3) {
+      font-family: var(--font-mono);
+      font-size: .74rem;
+      color: var(--text-dim);
+    }
+    @media (max-width: 640px) {
+      .tier-row { grid-template-columns: 90px 1fr; }
+      .tier-row.header { display: none; }
+      .tier-cell:nth-child(3),
+      .tier-cell:nth-child(4) { grid-column: 1 / -1; padding-top: .25rem; }
+    }
+
+    /* ═══════════════════════════════════════
+       FLOW STEPS
+     ═══════════════════════════════════════ */
+    .art-flow { margin: 1.5rem 0; }
+    .art-flow-step {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border-faint);
+      transition: padding-left var(--duration) var(--ease);
+    }
+    .art-flow-step:last-child { border-bottom: none; }
+    .art-flow-step:hover { padding-left: .4rem; }
+    .art-flow-num {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-glow);
+      border-radius: 3px;
+      padding: .22em .6em;
+      flex-shrink: 0;
+      margin-top: .1rem;
+      white-space: nowrap;
+    }
+    .art-flow-text {
+      font-family: var(--font-sans);
+      font-size: .95rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      font-weight: 300;
+    }
+    .art-flow-text strong { color: var(--text); font-weight: 600; }
+
+    /* ═══════════════════════════════════════
+       RULES LIST
+     ═══════════════════════════════════════ */
+    .rules { list-style: none; margin: 1.2rem 0; }
+    .rules li {
+      display: flex;
+      gap: .85rem;
+      align-items: baseline;
+      padding: .55rem 0;
+      border-bottom: 1px solid var(--border-faint);
+      font-size: .92rem;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-weight: 300;
+    }
+    .rules li:last-child { border-bottom: none; }
+    .rules li::before {
+      content: attr(data-n);
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      color: var(--accent);
+      flex-shrink: 0;
+      min-width: 28px;
+    }
+
+    /* ═══════════════════════════════════════
+       FAQ
+     ═══════════════════════════════════════ */
+    .faq-item {
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border-faint);
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: .6rem;
+      font-weight: 600;
+    }
+    .faq-a {
+      font-family: var(--font-sans);
+      font-size: .92rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      font-weight: 300;
+      max-width: 680px;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════ NAV ═══════════ -->
+  <nav class="ed-nav">
+    <a href="#" class="ed-nav__logo">LM PROXY</a>
+    <ul class="ed-nav__links">
+      <li>
+        <a href="#problem">
+          <span lang="en">Problem</span>
+          <span lang="it">Problema</span>
+        </a>
+      </li>
+      <li>
+        <a href="#architecture">
+          <span lang="en">Architecture</span>
+          <span lang="it">Architettura</span>
+        </a>
+      </li>
+      <li>
+        <a href="#routing">
+          <span lang="en">Routing</span>
+          <span lang="it">Routing</span>
+        </a>
+      </li>
+      <li>
+        <a href="#concurrency">
+          <span lang="en">Concurrency</span>
+          <span lang="it">Concorrenza</span>
+        </a>
+      </li>
+      <li>
+        <a href="#security">
+          <span lang="en">PII & NDA</span>
+          <span lang="it">Sicurezza</span>
+        </a>
+      </li>
+      <li>
+        <a href="#benchmarks">
+          <span lang="en">Benchmarks</span>
+          <span lang="it">Benchmark</span>
+        </a>
+      </li>
+      <li>
+        <a href="#configuration">
+          <span lang="en">Config</span>
+          <span lang="it">Config</span>
+        </a>
+      </li>
+      <li>
+        <a href="#faq">
+          <span lang="en">FAQ</span>
+          <span lang="it">FAQ</span>
+        </a>
+      </li>
+      <li>
+        <div class="ed-lang-switcher">
+          <button class="ed-lang-btn" data-lang-opt="en" aria-label="Switch to English">🇬🇧 EN</button>
+          <button class="ed-lang-btn" data-lang-opt="it" aria-label="Passa in Italiano">🇮🇹 IT</button>
+        </div>
+      </li>
+      <li>
+        <button class="ed-theme-toggle" id="themeToggle" aria-label="Toggle theme">☀️</button>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ═══════════ HERO ═══════════ -->
+  <section class="art-hero">
+    <div class="container">
+
+      <div class="art-hero__eyebrow">
+        <span lang="en">Zero-Dependency Local Inference Gateway</span>
+        <span lang="it">Gateway di Inferenza Locale senza Dipendenze Esterne</span>
+      </div>
+
+      <h1 class="art-hero__title">
+        <span lang="en">High-Performance<br /><em>AI Routing & Backpressure</em></span>
+        <span lang="it">Prestazioni Elevate<br /><em>AI Routing & Backpressure</em></span>
+      </h1>
+
+      <p class="art-hero__sub">
+        <span lang="en">A lightweight, self-optimizing local LLM proxy that shields consumer hardware (VRAM) from parallel execution crashes, dynamically delegates overflow traffic to cloud APIs, and strips company-NDA information prior to leaving the local network.</span>
+        <span lang="it">Un proxy LLM locale leggero e auto-ottimizzante che protegge l'hardware consumer (VRAM) da crash per esecuzioni parallele, delega dinamicamente il traffico in eccesso a servizi Cloud esterni e rimuove i dati sensibili e coperti da NDA prima che lascino la rete locale.</span>
+      </p>
+
+      <div class="art-hero__meta">
+        <div class="art-hero__meta-item">
+          <span class="art-hero__meta-label">Author</span>
+          <span class="art-hero__meta-value author">Alessandro Marocchini</span>
+        </div>
+        <div class="art-hero__meta-item">
+          <span class="art-hero__meta-label">
+            <span lang="en">Published</span>
+            <span lang="it">Pubblicato il</span>
+          </span>
+          <span class="art-hero__meta-value date">
+            <span lang="en">05 June 2026</span>
+            <span lang="it">05 Giugno 2026</span>
+          </span>
+        </div>
+        <div class="art-hero__meta-item">
+          <span class="art-hero__meta-label">Architecture</span>
+          <span class="art-hero__meta-value">Node.js (Zero-Dependency)</span>
+        </div>
+        <div class="art-hero__meta-item">
+          <span class="art-hero__meta-label">
+            <span lang="en">Local Engines</span>
+            <span lang="it">Motori Locali</span>
+          </span>
+          <span class="art-hero__meta-value">Ollama, LM Studio</span>
+        </div>
+        <div class="art-hero__meta-item">
+          <span class="art-hero__meta-label">
+            <span lang="en">Cloud Engines</span>
+            <span lang="it">Motori Cloud</span>
+          </span>
+          <span class="art-hero__meta-value">Gemini, OpenAI, Anthropic, Mistral</span>
+        </div>
+        <div class="art-hero__meta-item">
+          <span class="art-hero__meta-label">
+            <span lang="en">Controls</span>
+            <span lang="it">Controlli</span>
+          </span>
+          <span class="art-hero__meta-value">
+            <span lang="en">Vue 3 Dashboard (Hot-swappable)</span>
+            <span lang="it">Dashboard Vue 3 (Modificabile a Caldo)</span>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 01 — THE PROBLEM ═══════════ -->
+  <section id="problem" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">01 — The Concurrency Bottleneck</span>
+        <span lang="it">01 — Il Collo di Bottiglia della Concorrenza</span>
+      </span>
+      <h2>
+        <span lang="en">Local GPUs are powerful.<br />Parallel requests are deadly.</span>
+        <span lang="it">Le GPU locali sono potenti.<br />Le richieste parallele sono fatali.</span>
+      </h2>
+
+      <p lang="en">Running local Large Language Models (such as <code>mistral-nemo</code> or <code>qwen3</code>) on local development servers or workstation GPUs provides massive benefits: complete data privacy, zero call costs, and extremely low latency. However, these systems have a physical bottleneck: <strong>GPU VRAM</strong>.</p>
+      <p lang="it">L'esecuzione di Large Language Models in locale (come <code>mistral-nemo</code> o <code>qwen3</code>) su workstation o server di sviluppo offre enormi vantaggi: privacy assoluta dei dati, nessun costo di chiamata alle API e latenza bassissima. Tuttavia, questi sistemi si scontrano con un limite fisico invalicabile: la <strong>VRAM della GPU</strong>.</p>
+      
+      <p lang="en">Unlike cloud APIs designed with auto-scaling cluster structures, a single local server running Ollama or LM Studio can crash or experience catastrophic slowdowns (due to KV cache collision or memory thrashing) when 2 or 3 heavy requests are run at the exact same millisecond.</p>
+      <p lang="it">A differenza delle API cloud progettate con infrastrutture a cluster auto-scalanti, un singolo server locale che esegue Ollama o LM Studio può andare in crash o subire rallentamenti catastrofici (a causa della collisione della KV cache o del memory thrashing) se 2 o 3 richieste pesanti arrivano contemporaneamente nello stesso millisecondo.</p>
+      
+      <p lang="en">Moreover, developers frequently require an automated, transparent gateway that knows when to run a task locally (fast and free) and when to delegate it to the cloud (high token limits, complex reasoning), without exposing sensitive source code, corporate credentials, or company secrets to external endpoints.</p>
+      <p lang="it">Inoltre, gli sviluppatori hanno spesso bisogno di un gateway automatizzato e trasparente che sappia quando eseguire un task localmente (gratis e veloce) e quando delegarlo al cloud (limiti di token più ampi, ragionamenti complessi), senza esporre codice sorgente sensibile, credenziali aziendali o segreti industriali ad endpoint esterni.</p>
+
+      <div class="compare">
+        <div class="compare-box">
+          <span class="compare-title">
+            <span lang="en">Naked Local Inference</span>
+            <span lang="it">Inference Locale Semplice</span>
+          </span>
+          <div class="compare-item">
+            <span lang="en">Simultaneous requests collide in VRAM</span>
+            <span lang="it">Le richieste simultanee collidono in VRAM</span>
+          </div>
+          <div class="compare-item">
+            <span lang="en">No protection against 413 Out of Context</span>
+            <span lang="it">Nessuna protezione da errori 413 Out of Context</span>
+          </div>
+          <div class="compare-item">
+            <span lang="en">Prose credentials and NDA exposed in prompts</span>
+            <span lang="it">Credenziali e segreti NDA esposti nei prompt inviati</span>
+          </div>
+          <div class="compare-item">
+            <span lang="en">Manual routing code in each script</span>
+            <span lang="it">Codice di routing manuale duplicato in ogni script</span>
+          </div>
+        </div>
+        <div class="compare-box highlight">
+          <span class="compare-title">
+            <span lang="en">LM Proxy Architecture</span>
+            <span lang="it">Architettura LM Proxy</span>
+          </span>
+          <div class="compare-item">
+            <span lang="en">Hot-configurable concurrency limits</span>
+            <span lang="it">Limiti di concorrenza configurabili a caldo</span>
+          </div>
+          <div class="compare-item">
+            <span lang="en">Automatic cloud backpressure fallback</span>
+            <span lang="it">Fallback automatico sul cloud per troppa coda</span>
+          </div>
+          <div class="compare-item">
+            <span lang="en">Local LLM-assisted NER PII/NDA scrubbing</span>
+            <span lang="it">Pulizia automatica assistita da AI locale dei dati sensibili</span>
+          </div>
+          <div class="compare-item">
+            <span lang="en">Unified OpenAI-compatible endpoint</span>
+            <span lang="it">Endpoint unico compatibile con lo standard OpenAI</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ed-callout">
+        <span class="ed-callout__title">
+          <span lang="en">The Goal</span>
+          <span lang="it">L'Obiettivo</span>
+        </span>
+        <p lang="en">Deliver a <strong>zero-dependency Node.js proxy</strong> that intercepts all local LLM calls, queues them dynamically, scrubs them of secrets, and diverts excess load to cloud APIs the moment the local queue reaches saturation.</p>
+        <p lang="it">Fornire un <strong>proxy Node.js senza dipendenze esterne</strong> che intercetti tutte le chiamate ai modelli locali, le gestisca tramite code dinamiche, ne ripulisca i segreti aziendali e devii il carico in eccesso verso API cloud nel momento in cui la coda locale si satura.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="ed-quote-section">
+    <div class="container">
+      <blockquote>
+        <span lang="en">"Workstation inference isn't about matching cloud scale. It is about protecting local slots and scaling outwards only when saturated."</span>
+        <span lang="it">"L'inferenza locale su workstation non ha lo scopo di competere con la scalabilità del cloud. Il suo obiettivo è proteggere le risorse hardware locali e scalare all'esterno solo in caso di reale saturazione."</span>
+        <footer>LM Proxy — Core Principle, 2026</footer>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- ═══════════ 02 — ARCHITECTURE ═══════════ -->
+  <section id="architecture" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">02 — The Pillars</span>
+        <span lang="it">02 — I Pilastri Fondamentali</span>
+      </span>
+      <h2>
+        <span lang="en">Six modular engines.<br />One unified workflow.</span>
+        <span lang="it">Sei motori modulari.<br />Un unico flusso integrato.</span>
+      </h2>
+
+      <p lang="en">LM Proxy is built as a modular pipeline where every completion request passes through six specialized modules before hitting the final LLM engine.</p>
+      <p lang="it">LM Proxy è strutturato come una pipeline modulare in cui ogni richiesta di generazione (completion) attraversa sei moduli specializzati prima di raggiungere il motore LLM finale.</p>
+
+      <div class="art-h3">
+        <span lang="en">The architectural modules</span>
+        <span lang="it">I moduli architetturali</span>
+      </div>
+      <div class="tier-grid">
+        <div class="tier-row header">
+          <span>
+            <span lang="en">Engine Module</span>
+            <span lang="it">Modulo Motore</span>
+          </span>
+          <span>
+            <span lang="en">Core Responsibility</span>
+            <span lang="it">Responsabilità Principale</span>
+          </span>
+          <span>
+            <span lang="en">Performance Impact</span>
+            <span lang="it">Impatto sulle Prestazioni</span>
+          </span>
+          <span>
+            <span lang="en">Benefits</span>
+            <span lang="it">Benefici</span>
+          </span>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Parallel Queue</strong></div>
+          <div class="tier-cell">
+            <span lang="en">Manages concurrency limits and schedules tasks to protect VRAM</span>
+            <span lang="it">Gestisce i limiti di concorrenza e pianifica i task per proteggere la VRAM</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">None (Hot-path)</span>
+            <span lang="it">Nessuno (Hot-path)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Prevents local GPU crashes under heavy parallel load</span>
+            <span lang="it">Previene crash della GPU locale sotto carichi paralleli pesanti</span>
+          </div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Smart Router</strong></div>
+          <div class="tier-cell">
+            <span lang="en">Classifies requests by Task (Coding, Translation, Analysis, Writing)</span>
+            <span lang="it">Classifica le richieste per Tipo di Task (Scrittura, Codice, Traduzione, Analisi)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Minimal (&lt;5ms)</span>
+            <span lang="it">Minimo (&lt;5ms)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Picks the most cost-efficient and capable model</span>
+            <span lang="it">Seleziona il modello più efficiente in termini di costi e capacità</span>
+          </div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>PII & NDA Scruber</strong></div>
+          <div class="tier-cell">
+            <span lang="en">Extracts and sanitizes corporate keys, URLs, and secrets prior to cloud routing</span>
+            <span lang="it">Estrae e sanitizza chiavi API aziendali, URL e segreti prima dell'instradamento sul cloud</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">1-3s (Local LLM-NER)</span>
+            <span lang="it">1-3 secondi (con LLM-NER locale attivo)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Prevents corporate IP leakage to public cloud services</span>
+            <span lang="it">Evita la fuga di proprietà intellettuale aziendale verso i cloud pubblici</span>
+          </div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Context Compressor</strong></div>
+          <div class="tier-cell">
+            <span lang="en">Condenses chat history to fit inside the active context window</span>
+            <span lang="it">Comprime la cronologia della chat per farla rientrare nella finestra di contesto attiva</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Negligible (&lt;2ms)</span>
+            <span lang="it">Trascurabile (&lt;2ms)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Prevents HTTP 413 (Context Exceeded) failures</span>
+            <span lang="it">Previene fallimenti dovuti a limiti di contesto superati (HTTP 413)</span>
+          </div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>NEET Scorer</strong></div>
+          <div class="tier-cell">
+            <span lang="en">Tracks routing outcomes and models accuracy in a worker thread</span>
+            <span lang="it">Traccia i risultati del routing e l'accuratezza dei modelli in un thread separato</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Zero (Async worker)</span>
+            <span lang="it">Zero (Esecuzione asincrona in background)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Provides telemetry and detects routing anomalies</span>
+            <span lang="it">Fornisce telemetria in tempo reale e rileva anomalie di routing</span>
+          </div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Dreamer Scheduler</strong></div>
+          <div class="tier-cell">
+            <span lang="en">Periodically extracts knowledge from history to compile system prompts</span>
+            <span lang="it">Estrae periodicamente conoscenza dalla cronologia per compilare prompt di sistema</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Zero (Background job)</span>
+            <span lang="it">Zero (Job in background)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Adapts prompts dynamically based on user usage patterns</span>
+            <span lang="it">Adatta i prompt in modo dinamico in base alle abitudini di utilizzo dell'utente</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 03 — ROUTING ═══════════ -->
+  <section id="routing" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">03 — Task-Based Routing</span>
+        <span lang="it">03 — Routing Basato sui Task</span>
+      </span>
+      <h2>
+        <span lang="en">Dynamic model matching.<br />Optimized for every task.</span>
+        <span lang="it">Associazione dinamica dei modelli.<br />Ottimizzata per ogni specifica operazione.</span>
+      </h2>
+
+      <p lang="en">Not all queries require the same intelligence. A coding request requires complex structural reasoning, while a translation query is highly repetitive. LM Proxy maps incoming completions to specific tasks, each with its own target model and keywords.</p>
+      <p lang="it">Non tutte le richieste richiedono lo stesso livello di intelligenza. Una richiesta di programmazione richiede ragionamenti logico-strutturali complessi, mentre un'operazione di traduzione è ripetitiva e diretta. LM Proxy mappa le generazioni in arrivo a specifici compiti (task), ciascuno con il proprio modello di destinazione e le proprie parole chiave.</p>
+
+      <div class="art-h3">
+        <span lang="en">The Task Catalog & Routing Rubric</span>
+        <span lang="it">Il Catalogo dei Task e la Tabella di Routing</span>
+      </div>
+      <div class="tier-grid">
+        <div class="tier-row header">
+          <span>
+            <span lang="en">Task Identifier</span>
+            <span lang="it">Identificativo Task</span>
+          </span>
+          <span>
+            <span lang="en">Description</span>
+            <span lang="it">Descrizione</span>
+          </span>
+          <span>
+            <span lang="en">Default Target</span>
+            <span lang="it">Destinazione di Default</span>
+          </span>
+          <span>
+            <span lang="en">Sample Keywords</span>
+            <span lang="it">Esempi di Parole Chiave</span>
+          </span>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><span class="tier tier-high">Coding</span></div>
+          <div class="tier-cell">
+            <span lang="en">Software development, debugging, and SQL query creation</span>
+            <span lang="it">Sviluppo software, debugging e creazione di query SQL</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Local Smart Model (e.g. <code>qwen3:14b</code>)</span>
+            <span lang="it">Modello Locale Avanzato (es. <code>qwen3:14b</code>)</span>
+          </div>
+          <div class="tier-cell"><code>function</code>, <code>refactor</code>, <code>sql</code>, <code>compila</code></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><span class="tier tier-mid">Translation</span></div>
+          <div class="tier-cell">
+            <span lang="en">Multilingual localization and text translation</span>
+            <span lang="it">Localizzazione multilingua e traduzione di testi</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Local Base Model (e.g. <code>mistral-nemo</code>)</span>
+            <span lang="it">Modello Locale Base (es. <code>mistral-nemo</code>)</span>
+          </div>
+          <div class="tier-cell"><code>traduci</code>, <code>translate</code>, <code>in inglese</code></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><span class="tier tier-mid">Analysis</span></div>
+          <div class="tier-cell">
+            <span lang="en">Data summarization, reports, and strategic fact-checking</span>
+            <span lang="it">Sintesi di dati, reportistica e fact-checking strategico</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Cloud Provider (e.g. <code>gpt-4o-mini</code>)</span>
+            <span lang="it">Provider Cloud Esterno (es. <code>gpt-4o-mini</code>)</span>
+          </div>
+          <div class="tier-cell"><code>riassumi</code>, <code>summarize</code>, <code>analizza</code></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><span class="tier tier-high">Writing</span></div>
+          <div class="tier-cell">
+            <span lang="en">Copywriting, drafting emails, and editorial outlines</span>
+            <span lang="it">Copywriting, stesura di e-mail e scalette editoriali</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Local Base Model (e.g. <code>mistral-nemo</code>)</span>
+            <span lang="it">Modello Locale Base (es. <code>mistral-nemo</code>)</span>
+          </div>
+          <div class="tier-cell"><code>scrivi</code>, <code>copywriting</code>, <code>email</code>, <code>bozza</code></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><span class="tier tier-mid">Social Post</span></div>
+          <div class="tier-cell">
+            <span lang="en">Writing tweets, Facebook updates, and social media posts</span>
+            <span lang="it">Scrittura di tweet, aggiornamenti Facebook e post sui social media</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Auto / Dynamic Router (defaulting to local or cloud)</span>
+            <span lang="it">Modello Automatico / Dinamico (locale o cloud)</span>
+          </div>
+          <div class="tier-cell"><code>tweet</code>, <code>facebook</code>, <code>instagram</code>, <code>social</code></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><span class="tier tier-mid" style="background: rgba(120,120,120,.1); color: var(--text-muted);">General</span></div>
+          <div class="tier-cell">
+            <span lang="en">Generic prompts, casual conversation, and fallback queries</span>
+            <span lang="it">Richieste generiche, conversazione libera e query di fallback</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en">Auto / Dynamic Router (defaulting to local or cloud)</span>
+            <span lang="it">Modello Automatico / Dinamico (locale o cloud)</span>
+          </div>
+          <div class="tier-cell">
+            <span lang="en"><em>None (Fallback)</em></span>
+            <span lang="it"><em>Nessuna (Fallback)</em></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="art-h3">
+        <span lang="en">AI-Assisted Keyword Ingestion</span>
+        <span lang="it">Generazione di Parole Chiave Assistita da AI</span>
+      </div>
+      <p lang="en">To keep the routing layer sharp, the dashboard exposes an <strong>AI-Assisted Task Generator</strong>. When configuring a new task, the proxy uses the local LLM to generate dozens of matching semantic keywords from the task name and description. This BM25-style keyword matching operates entirely locally and resolves in under two seconds.</p>
+      <p lang="it">Per mantenere preciso lo strato di routing, la dashboard espone un <strong>Generatore di Task Assistito da AI</strong>. Quando viene configurato un nuovo task, il proxy utilizza l'LLM locale per generare decine di parole chiave semantiche correlate partendo solo dal nome e dalla descrizione del task. Questa corrispondenza semantica a parole chiave avviene interamente a livello locale e si completa in meno di due secondi.</p>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 04 — CONCURRENCY ═══════════ -->
+  <section id="concurrency" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">04 — Concurrency & Backpressure</span>
+        <span lang="it">04 — Gestione della Concorrenza e Backpressure</span>
+      </span>
+      <h2>
+        <span lang="en">Dynamic queues.<br />Seamless cloud fallback.</span>
+        <span lang="it">Code dinamiche.<br />Fallback trasparente sul Cloud.</span>
+      </h2>
+
+      <p lang="en">The core feature of LM Proxy's VRAM protection is its dynamic queue coordinator. Instead of hardcoding performance thresholds, they can be configured at runtime from the dashboard without restarting the service.</p>
+      <p lang="it">La funzionalità chiave della protezione VRAM di LM Proxy è il coordinatore dinamico delle code. Invece di cablare le soglie di prestazioni a livello di codice, queste possono essere configurate in tempo reale dalla dashboard senza riavviare il servizio.</p>
+
+      <div class="art-flow">
+        <div class="art-flow-step">
+          <span class="art-flow-num">Step 01</span>
+          <div class="art-flow-text">
+            <span lang="en">A request arrives at the proxy. The Router evaluates the prompt and determines if the task target is <strong>Local</strong> (e.g. <code>translation</code> using <code>mistral-nemo</code>).</span>
+            <span lang="it">Una richiesta arriva al proxy. Il Router valuta il prompt e determina se il target del task è <strong>Locale</strong> (ad esempio una <code>translation</code> che usa il modello <code>mistral-nemo</code>).</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Step 02</span>
+          <div class="art-flow-text">
+            <span lang="en">The proxy checks the number of active local slots: <code>activeCount</code>. If <code>activeCount &lt; maxConcurrent</code> (e.g. 2 slot), the request is processed immediately.</span>
+            <span lang="it">Il proxy controlla gli slot locali attivi: <code>activeCount</code>. Se <code>activeCount &lt; maxConcurrent</code> (es. 2 slot), la richiesta viene elaborata immediatamente.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Step 03</span>
+          <div class="art-flow-text">
+            <span lang="en">If all local slots are busy, the request is placed in the local queue. The queue depth increases: <code>queue.length</code>.</span>
+            <span lang="it">Se tutti gli slot locali sono occupati, la richiesta viene inserita in coda locale. La profondità della coda aumenta: <code>queue.length</code>.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Step 04</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Backpressure Check:</strong> If the queue depth exceeds the threshold <code>maxQueueDepth</code> (e.g. 3), and <code>cloudFallbackOnQueueFull</code> is enabled, the proxy diverts the incoming request to the <strong>Cloud Provider</strong> in real-time.</span>
+            <span lang="it"><strong>Verifica Backpressure:</strong> Se la profondità della coda supera la soglia impostata <code>maxQueueDepth</code> (es. 3) e il fallback è abilitato (`cloudFallbackOnQueueFull`), il proxy devia la richiesta in tempo reale al <strong>Provider Cloud</strong> selezionato.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Step 05</span>
+          <div class="art-flow-text">
+            <span lang="en">The client receives a fast response from the Cloud, completely transparently, while the local GPU completes its slots without thrashing.</span>
+            <span lang="it">Il client riceve una risposta veloce dal Cloud in modo del tutto trasparente, mentre la GPU locale completa i suoi slot in esecuzione senza subire crash.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="art-h3">
+        <span lang="en">Logging telemetry from a live test</span>
+        <span lang="it">Lettura dei log di telemetria durante un test reale</span>
+      </div>
+      <div class="code-label">
+        <span lang="en">LM Proxy Console Output</span>
+        <span lang="it">Output in Console di LM Proxy</span>
+      </div>
+<pre><code><span lang="en"><span class="cm">// Request 1 dispatched locally</span>
+<span class="ck">[queue]</span> <span class="cv">enqueued (active=0/1, depth=0)</span>
+<span class="ck">[queue]</span> <span class="cv">dispatch (active=1/1, pending=0) -> Inoltro /chat/completions verso Ollama (mistral-nemo:latest)</span>
+
+<span class="cm">// Request 2 added to waitlist (depth=0)</span>
+<span class="ck">[queue]</span> <span class="cv">enqueued (active=1/1, depth=0)</span>
+
+<span class="cm">// Request 3 triggers backpressure fallback immediately</span>
+<span class="ck">[queue]</span> <span class="cv-high">local queue backpressure (depth=1 >= threshold=1) -> deviato automaticamente al Cloud (openai)</span>
+<span class="ck">[router]</span> <span class="cv-mid">-> cloud (openai:gpt-4o-mini) (caller=127.0.0.1)</span></span><span lang="it"><span class="cm">// Richiesta 1 elaborata localmente</span>
+<span class="ck">[queue]</span> <span class="cv">enqueued (active=0/1, depth=0)</span>
+<span class="ck">[queue]</span> <span class="cv">dispatch (active=1/1, pending=0) -> Inoltro /chat/completions verso Ollama (mistral-nemo:latest)</span>
+
+<span class="cm">// Richiesta 2 aggiunta alla lista di attesa (coda=0)</span>
+<span class="ck">[queue]</span> <span class="cv">enqueued (active=1/1, depth=0)</span>
+
+<span class="cm">// Richiesta 3 attiva immediatamente il fallback di backpressure</span>
+<span class="ck">[queue]</span> <span class="cv-high">local queue backpressure (depth=1 >= threshold=1) -> deviato automaticamente al Cloud (openai)</span>
+<span class="ck">[router]</span> <span class="cv-mid">-> cloud (openai:gpt-4o-mini) (caller=127.0.0.1)</span></span></code></pre>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 05 — SECURITY ═══════════ -->
+  <section id="security" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">05 — PII & NDA Anonymization</span>
+        <span lang="it">05 — Anonimizzazione PII e NDA</span>
+      </span>
+      <h2>
+        <span lang="en">Scrubbing secrets.<br />Before they leave the LAN.</span>
+        <span lang="it">Pulizia dei dati riservati.<br />Prima che lascino la rete locale.</span>
+      </h2>
+
+      <p lang="en">Diverting overflow requests to a public cloud API (like Gemini or OpenAI) poses a major security compliance issue: private data leakage. To resolve this, LM Proxy integrates a local, multi-tiered <strong>Anonymizer</strong>.</p>
+      <p lang="it">Deviare le richieste in sovraccarico verso API cloud pubbliche (come Gemini o OpenAI) introduce un grave problema di conformità e sicurezza: la fuga di dati privati aziendali. Per risolvere questo problema, LM Proxy integra un sistema di <strong>Anonimizzazione a più livelli</strong> che opera interamente in locale.</p>
+
+      <div class="art-flow">
+        <div class="art-flow-step">
+          <span class="art-flow-num">Tier 01</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Regex Filtering:</strong> Fast, deterministic scrubbing of classic patterns (Email addresses, Phone numbers, Credit Cards, IBANs, JWT tokens, AWS/Google API keys, IPv4/v6 addresses, and folder paths).</span>
+            <span lang="it"><strong>Filtraggio basato su Regex:</strong> Rimozione veloce e deterministica di pattern noti (indirizzi e-mail, numeri di telefono, carte di credito, IBAN, chiavi JWT, chiavi API cloud, indirizzi IP e percorsi di cartelle di sistema).</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Tier 02</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Semantic Local LLM NER (Named Entity Recognition):</strong> If enabled, the prompt is evaluated locally by the base LLM to identify context-sensitive secrets: company names, client project codenames covered by NDA, employee names, and custom variables.</span>
+            <span lang="it"><strong>Riconoscimento delle Entità Semantiche (LLM-NER locale):</strong> Se abilitato, il prompt viene esaminato dal modello locale per identificare informazioni sensibili dipendenti dal contesto: nomi di aziende esterne, nomi in codice di progetti protetti da NDA, nomi di dipendenti o variabili interne.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Tier 03</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Token Splicing:</strong> Sensitive strings are replaced with safe, unique placeholders (e.g. <code>[COMPANY_NAME_1]</code>, <code>[API_KEY_1]</code>). The mapping table is stored in local volatile memory.</span>
+            <span lang="it"><strong>Sostituzione con Placeholder:</strong> Tutte le informazioni sensibili individuate vengono sostituite con identificativi sicuri e univoci (es. <code>[COMPANY_NAME_1]</code>, <code>[API_KEY_1]</code>). La tabella di corrispondenza viene memorizzata nella memoria RAM volatile locale del server.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Tier 04</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Prompt Dispatch:</strong> The clean, anonymous prompt is sent to the Cloud provider.</span>
+            <span lang="it"><strong>Invio al Cloud:</strong> Il prompt, completamente ripulito e anonimizzato, viene spedito in sicurezza alle API del cloud provider esterno.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Tier 05</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>De-anonymization:</strong> Once the cloud returns the completion, the proxy reconstructs the response, replacing placeholders with original values before delivering the payload to the developer.</span>
+            <span lang="it"><strong>De-anonimizzazione:</strong> Quando il cloud restituisce la risposta generata, il proxy la ricostruisce ripristinando i valori reali al posto dei placeholder prima di restituire il payload finale allo sviluppatore.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 06 — BENCHMARKS ═══════════ -->
+  <section id="benchmarks" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">06 — Real-World Performance & Benchmarks</span>
+        <span lang="it">06 — Prestazioni e Benchmark Reali</span>
+      </span>
+      <h2>
+        <span lang="en">Under the hood.<br />Empirical stress testing.</span>
+        <span lang="it">Sotto il cofano.<br />Stress test empirici sul campo.</span>
+      </h2>
+
+      <p lang="en">To validate the efficacy of LM Proxy's VRAM protection and backpressure fallback, we conducted a rigorous concurrency test. The test simulated a developer workspace with high parallel call frequency, comparing a naked queue setup versus our dynamic fallback routing.</p>
+      <p lang="it">Per validare l'efficacia della protezione VRAM e della gestione della backpressure di LM Proxy, abbiamo eseguito un test di carico rigoroso. Il test simula uno scenario di sviluppo con un'elevata frequenza di richieste parallele, confrontando un sistema standard non protetto con il nostro sistema di routing con fallback dinamico.</p>
+      
+      <p lang="en">We configured the proxy with <code>maxConcurrent = 1</code> and <code>maxQueueDepth = 1</code>, enabling <code>cloudFallbackOnQueueFull = true</code>. We then sent <strong>3 heavy requests simultaneously</strong> to the local chat completions endpoint. The results illustrate how the proxy safeguards local performance while preventing latency degradation:</p>
+      <p lang="it">Abbiamo configurato il proxy con <code>maxConcurrent = 1</code> e <code>maxQueueDepth = 1</code>, abilitando <code>cloudFallbackOnQueueFull = true</code>. Abbiamo poi inviato <strong>3 richieste pesanti simultaneamente</strong> all'endpoint locale delle chat completions. I risultati mostrano come il proxy salvaguardi le prestazioni locali prevenendo il degrado dei tempi di risposta:</p>
+
+      <div class="art-h3">
+        <span lang="en">Stress Test Results</span>
+        <span lang="it">Risultati dello Stress Test</span>
+      </div>
+      <div class="tier-grid">
+        <div class="tier-row header">
+          <span>
+            <span lang="en">Request ID</span>
+            <span lang="it">ID Richiesta</span>
+          </span>
+          <span>
+            <span lang="en">Evaluated Target</span>
+            <span lang="it">Destinazione Valutata</span>
+          </span>
+          <span>
+            <span lang="en">Execution Type</span>
+            <span lang="it">Tipo di Esecuzione</span>
+          </span>
+          <span>
+            <span lang="en">Total Latency</span>
+            <span lang="it">Latenza Totale</span>
+          </span>
+          <span>
+            <span lang="en">HTTP Status</span>
+            <span lang="it">Stato HTTP</span>
+          </span>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Request #1</strong></div>
+          <div class="tier-cell">Local (Ollama)</div>
+          <div class="tier-cell">
+            <span lang="en">Active Execution</span>
+            <span lang="it">In Esecuzione Attiva</span>
+          </div>
+          <div class="tier-cell"><strong>7,164 ms</strong></div>
+          <div class="tier-cell"><span class="tier tier-high">200 OK</span></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Request #2</strong></div>
+          <div class="tier-cell">Local (Ollama)</div>
+          <div class="tier-cell">
+            <span lang="en">Enqueued & Wait</span>
+            <span lang="it">Accodata in Attesa</span>
+          </div>
+          <div class="tier-cell"><strong>8,056 ms</strong></div>
+          <div class="tier-cell"><span class="tier tier-high">200 OK</span></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-cell"><strong>Request #3</strong></div>
+          <div class="tier-cell">Cloud Fallback</div>
+          <div class="tier-cell">
+            <span lang="en">Immediate Divert</span>
+            <span lang="it">Deviazione Immediata</span>
+          </div>
+          <div class="tier-cell"><strong>6,896 ms</strong></div>
+          <div class="tier-cell"><span class="tier tier-high">200 OK</span></div>
+        </div>
+      </div>
+
+      <div class="art-h3">
+        <span lang="en">Key Findings & Insights</span>
+        <span lang="it">Considerazioni e Dati Rilevati</span>
+      </div>
+      <div class="art-flow">
+        <div class="art-flow-step">
+          <span class="art-flow-num">Insight A</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>No GPU thrashing:</strong> Request #1 and Request #2 were processed in serial on the local GPU. Because only 1 model slot was active in VRAM, the workstation did not crash, overheat, or drop context tokens.</span>
+            <span lang="it"><strong>GPU stabile e protetta:</strong> La Richiesta 1 e la Richiesta 2 sono state elaborate sequenzialmente sulla GPU locale. Avendo mantenuto attivo un solo slot di calcolo in VRAM, la workstation non ha subito surriscaldamenti, esaurimento di memoria o perdite di token di contesto.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Insight B</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Anonymizer overhead:</strong> Request #3 (deviated to cloud) took 6.8 seconds. Why? Because the proxy executed the local LLM-assisted NER PII/NDA scrubbing first. The anonymizer step waited for active slots to clear, ensuring <strong>zero data leaks</strong> to public cloud APIs at the cost of waiting. If speed is preferred, disabling Tier 2 semantic scrubbing brings cloud fallback latency down to a mere <strong>150 ms</strong>.</span>
+            <span lang="it"><strong>Impatto dell'Anonimizzatore:</strong> La Richiesta 3 (deviata sul cloud) ha richiesto 6.8 secondi. Perché? Perché il proxy ha eseguito prima lo scrubbing semantico dei dati via LLM locale. Questa operazione ha atteso la liberazione dello slot locale, garantendo la <strong>sicurezza totale dei dati</strong> prima dell'invio esterno. Se la velocità è prioritaria, disabilitando lo scrubbing semantico (Tier 2) si riduce il tempo di instradamento al cloud a soli <strong>150 ms</strong>.</span>
+          </div>
+        </div>
+        <div class="art-flow-step">
+          <span class="art-flow-num">Insight C</span>
+          <div class="art-flow-text">
+            <span lang="en"><strong>Predictable scaling:</strong> Without LM Proxy, Request #3 would have either crashed Ollama (403/500 Out of Memory) or queued behind Request #2, stretching its total wait time to over 15 seconds. By routing it to cloud, the developer gets an immediate response without workstation bottlenecks.</span>
+            <span lang="it"><strong>Scalabilità prevedibile:</strong> Senza LM Proxy, la Richiesta 3 avrebbe causato il crash di Ollama (Out of Memory) o si sarebbe accodata dietro alla Richiesta 2, portando il tempo totale di attesa ad oltre 15 secondi. Con l'instradamento cloud il client riceve la risposta subito e in totale sicurezza.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 07 — CONFIGURATION ═══════════ -->
+  <section id="configuration" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">07 — Configuration Schema</span>
+        <span lang="it">07 — Schema della Configurazione</span>
+      </span>
+      <h2>
+        <span lang="en">Hot-swappable settings.<br />Stored in plain JSON.</span>
+        <span lang="it">Impostazioni modificabili a caldo.<br />Salvate in un semplice file JSON.</span>
+      </h2>
+
+      <p lang="en">The proxy's entire state and routing configurations are persisted in a single <code>.router-config.json</code> file. Every alteration made on the dashboard Vue UI is written directly to disk and reflected instantly in incoming calls.</p>
+      <p lang="it">L'intero stato del proxy e le regole di routing sono salvati in un unico file <code>.router-config.json</code>. Qualsiasi modifica effettuata tramite la dashboard grafica viene scritta direttamente su disco ed applicata istantaneamente a tutte le nuove richieste in ingresso.</p>
+
+      <div class="code-label">.router-config.json</div>
+<pre><code><span class="cm">{</span>
+  <span class="ck">"enabled":</span> <span class="cv">true,</span>
+  <span class="ck">"maxConcurrent":</span> <span class="cv">2,</span>
+  <span class="ck">"maxQueueDepth":</span> <span class="cv">3,</span>
+  <span class="ck">"cloudFallbackOnQueueFull":</span> <span class="cv">true,</span>
+  <span class="ck">"cloudProvider": <span class="cv">"openai",</span>
+  <span class="ck">"cloudModel":</span> <span class="cv">"gpt-4o-mini",</span>
+  <span class="ck">"apiKeys":</span> <span class="cm">{</span>
+    <span class="ck">"gemini":</span> <span class="cv">"AIzaSy...",</span>
+    <span class="ck">"openai":</span> <span class="cv">"sk-proj-..."</span>
+  <span class="cm">},</span>
+  <span class="ck">"taskRouting":</span> <span class="cm">{</span>
+    <span class="ck">"coding":</span> <span class="cv">"ollama-smart",</span>
+    <span class="ck">"translation":</span> <span class="cv">"ollama"</span>
+  <span class="cm">}</span>
+<span class="cm">}</span></code></pre>
+
+      <div class="art-h3">
+        <span lang="en">Ingress and Egress Management Rules</span>
+        <span lang="it">Regole di Gestione in Ingresso e Uscita</span>
+      </div>
+      <ul class="rules">
+        <li data-n="R1">
+          <span lang="en">The Local Concurrency queue governs ONLY requests whose evaluated target is local.</span>
+          <span lang="it">La coda di concorrenza locale gestisce ESCLUSIVAMENTE le richieste destinate ai modelli locali.</span>
+        </li>
+        <li data-n="R2">
+          <span lang="en">Requests explicitly mapped to cloud bypass the queue and execute asynchronously.</span>
+          <span lang="it">Le richieste mappate direttamente sul cloud scavalcano la coda ed eseguono asincronamente.</span>
+        </li>
+        <li data-n="R3">
+          <span lang="en">Streaming responses (SSE) are fully supported during cloud fallback.</span>
+          <span lang="it">Le risposte in streaming (SSE) sono pienamente supportate anche durante il fallback sul cloud.</span>
+        </li>
+        <li data-n="R4">
+          <span lang="en">If the cloud key is missing, backpressure fallbacks degrade gracefully to local queue wait times.</span>
+          <span lang="it">Se la chiave cloud non è configurata, la richiesta di fallback rimane in coda locale degradando in modo sicuro.</span>
+        </li>
+      </ul>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ 08 — FAQ ═══════════ -->
+  <section id="faq" class="art-section">
+    <div class="container">
+
+      <span class="section-number">
+        <span lang="en">08 — FAQ</span>
+        <span lang="it">08 — Domande Frequenti</span>
+      </span>
+      <h2>
+        <span lang="en">Common questions.</span>
+        <span lang="it">Domande frequenti e chiarimenti.</span>
+      </h2>
+
+      <div class="faq-item">
+        <div class="faq-q">
+          <span lang="en">Does this require installing external dependencies?</span>
+          <span lang="it">È richiesta l'installazione di dipendenze esterne?</span>
+        </div>
+        <div class="faq-a">
+          <span lang="en">No. LM Proxy is written entirely in native Node.js using core libraries (<code>http</code>, <code>fs</code>, <code>crypto</code>). This guarantees maximum startup speed, absolute compatibility with any server OS, and minimizes security vulnerabilities.</span>
+          <span lang="it">No. LM Proxy è scritto interamente in Node.js nativo utilizzando solo moduli di sistema (<code>http</code>, <code>fs</code>, <code>crypto</code>). Questo garantisce un avvio fulmineo, massima compatibilità multipiattaforma e riduce a zero le vulnerabilità esterne.</span>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span lang="en">How does the anonymizer affect latency?</span>
+          <span lang="it">Qual è l'impatto dell'anonimizzatore sulla latenza?</span>
+        </div>
+        <div class="faq-a">
+          <span lang="en">Tier 1 regex scrubbing is practically instantaneous (&lt;1ms). Tier 2 semantic LLM scrubbing adds a delay matching the speed of your local model (approx. 1-2s). If speed is critical, you can disable Tier 2 and rely only on Tier 1 regex.</span>
+          <span lang="it">La rimozione di Tier 1 (tramite Regex) è istantanea (&lt;1ms). La rimozione semantica di Tier 2 (via LLM) introduce una latenza legata alla velocità del modello locale (circa 1-2s). In casi ad alta priorità di velocità, è possibile disattivare il Tier 2 mantenendo il Tier 1 attivo.</span>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span lang="en">Can I hot-swap models during live operations?</span>
+          <span lang="it">È possibile scambiare i modelli a caldo durante le operazioni?</span>
+        </div>
+        <div class="faq-a">
+          <span lang="en">Yes. Using the Vue 3 control panel, you can alter active models, change API keys, and adjust queue depth thresholds. The changes are saved instantly and apply to all subsequent chat completion requests without restarting the Node server.</span>
+          <span lang="it">Sì. Tramite la dashboard Vue 3 è possibile cambiare modelli attivi, chiavi API e limiti di concorrenza/coda. Le modifiche vengono salvate all'istante e si applicano a tutte le nuove richieste senza dover riavviare il server.</span>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span lang="en">What local engines are supported?</span>
+          <span lang="it">Quali motori di inferenza locali sono supportati?</span>
+        </div>
+        <div class="faq-a">
+          <span lang="en">Any local engine that exposes an OpenAI-compatible API. The proxy detects models via Ollama's local registry by default, but can be configured to map to LM Studio or LocalAI ports.</span>
+          <span lang="it">Qualunque motore locale che esponga API compatibili con lo standard OpenAI. Il proxy rileva di default i modelli locali tramite il registro di Ollama, ma può essere puntato anche a porte di LM Studio o LocalAI.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="ed-footer">
+    <div class="container ed-footer__inner">
+      <span class="ed-footer__text">
+        LM PROXY — 
+        <span lang="en">High-Performance AI Routing</span>
+        <span lang="it">Routing AI ad Alte Prestazioni</span>
+        &mdash;
+        <strong style="color:var(--text-muted)">Alessandro Marocchini</strong>
+        &mdash; 
+        <span lang="en">05 June 2026</span>
+        <span lang="it">05 Giugno 2026</span>
+      </span>
+      <a href="https://github.com/alessandro-marocchini/designsystem" class="ed-footer__link" target="_blank" rel="noopener">
+        Editorial Design System →
+      </a>
+    </div>
+  </footer>
+
+  <!-- THEME & LANGUAGE TOGGLE -->
+  <script>
+    (function () {
+      const html = document.documentElement;
+      
+      // Theme Toggle Logic
+      const themeBtn  = document.getElementById('themeToggle');
+      function syncThemeIcon() {
+        const dark = html.getAttribute('data-theme') === 'dark';
+        themeBtn.textContent = dark ? '☀️' : '🌙';
+        themeBtn.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+      }
+      themeBtn.addEventListener('click', function () {
+        const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('ed-theme', next);
+        syncThemeIcon();
+      });
+      syncThemeIcon();
+
+      // Language Selector Logic
+      const langBtns = document.querySelectorAll('.ed-lang-btn');
+      langBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+          const selectedLang = this.getAttribute('data-lang-opt');
+          html.setAttribute('data-lang', selectedLang);
+          localStorage.setItem('ed-lang', selectedLang);
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>
