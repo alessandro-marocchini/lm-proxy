@@ -403,6 +403,32 @@
       max-width: 680px;
       margin: 0;
     }
+
+    /* ═══════════════════════════════════════
+       SCREENSHOT ARTICOLO
+     ═══════════════════════════════════════ */
+    .art-screenshot {
+      margin: 3rem 0 0;
+    }
+    .art-screenshot__img {
+      width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: block;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+    [data-theme="dark"] .art-screenshot__img {
+      box-shadow: 0 4px 24px rgba(0,0,0,.32);
+    }
+    .art-screenshot__caption {
+      font-family: var(--font-mono);
+      font-size: .63rem;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: .75rem;
+      letter-spacing: .05em;
+      line-height: 1.6;
+    }
   </style>
 </head>
 
@@ -762,6 +788,20 @@
         </div>
       </div>
 
+      <!-- SCREENSHOT: Tab Modelli -->
+      <figure class="art-screenshot">
+        <img
+          src="models.png"
+          alt="LM Proxy Control Panel — Tab Modelli: assegnazione alias aworanlm, aworanlm-smart, aworanembedding ai modelli Ollama locali"
+          class="art-screenshot__img"
+          loading="lazy"
+        />
+        <figcaption class="art-screenshot__caption">
+          <span lang="en">Dashboard · Models tab — Alias assignment for the three proxy model slots (Primary, Smart, Embedding) mapped to local Ollama models in real time.</span>
+          <span lang="it">Dashboard · Tab Modelli — Assegnazione degli alias ai tre slot modello del proxy (Primario, Smart, Embedding) mappati sui modelli Ollama locali in tempo reale.</span>
+        </figcaption>
+      </figure>
+
     </div>
   </section>
 
@@ -888,6 +928,20 @@
       <p lang="en">To keep the routing layer sharp, the dashboard exposes an <strong>AI-Assisted Task Generator</strong>. When configuring a new task, the proxy uses the local LLM to generate dozens of matching semantic keywords from the task name and description. This BM25-style keyword matching operates entirely locally and resolves in under two seconds.</p>
       <p lang="it">Per mantenere preciso lo strato di routing, la dashboard espone un <strong>Generatore di Task Assistito da AI</strong>. Quando viene configurato un nuovo task, il proxy utilizza l'LLM locale per generare decine di parole chiave semantiche correlate partendo solo dal nome e dalla descrizione del task. Questa corrispondenza semantica a parole chiave avviene interamente a livello locale e si completa in meno di due secondi.</p>
 
+      <!-- SCREENSHOT: Tab Router -->
+      <figure class="art-screenshot">
+        <img
+          src="router.png"
+          alt="LM Proxy Control Panel — Tab Router: configurazione Multi-LLM con slider di sensibilità Tier 2, keyword override e soglia token Gemini cloud"
+          class="art-screenshot__img"
+          loading="lazy"
+        />
+        <figcaption class="art-screenshot__caption">
+          <span lang="en">Dashboard · Router tab — Multi-LLM routing configuration: Tier 2 sensitivity slider, smart keyword override list, and Gemini cloud token threshold.</span>
+          <span lang="it">Dashboard · Tab Router — Configurazione del routing Multi-LLM: slider di sensibilità Tier 2, lista di keyword override smart e soglia token per il fallback Gemini cloud.</span>
+        </figcaption>
+      </figure>
+
     </div>
   </section>
 
@@ -972,6 +1026,20 @@
 <span class="cm">// Richiesta 3 attiva immediatamente il fallback di backpressure</span>
 <span class="ck">[queue]</span> <span class="cv-high">local queue backpressure (depth=1 >= threshold=1) -> deviato automaticamente al Cloud (openai)</span>
 <span class="ck">[router]</span> <span class="cv-mid">-> cloud (openai:gpt-4o-mini) (caller=127.0.0.1)</span></span></code></pre>
+
+      <!-- SCREENSHOT: Tab Log -->
+      <figure class="art-screenshot">
+        <img
+          src="log.png"
+          alt="LM Proxy Control Panel — Tab Log: stream di log in tempo reale con eventi QUEUE, ROUTER e PROXY durante una sessione attiva"
+          class="art-screenshot__img"
+          loading="lazy"
+        />
+        <figcaption class="art-screenshot__caption">
+          <span lang="en">Dashboard · Log tab — Real-time log stream showing QUEUE dispatch events, ROUTER decisions, and PROXY output confirmations during a live session.</span>
+          <span lang="it">Dashboard · Tab Log — Stream di log in tempo reale con eventi di dispatch della QUEUE, decisioni del ROUTER e conferme di output del PROXY durante una sessione attiva.</span>
+        </figcaption>
+      </figure>
 
     </div>
   </section>
